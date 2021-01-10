@@ -22,6 +22,7 @@ jobs:
       - ci
       - run: |
           test "$(node -p 'require("./package.json").version')" = "$CIRCLE_TAG"
+          npm run build
           echo //registry.npmjs.org/:_authToken="$NPM_TOKEN" >>.npmrc
           npm publish
 
