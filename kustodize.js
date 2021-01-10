@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 const { program } = require('@caporal/core')
+const { resolve } = require('path')
 const { build, generate } = require('./dist')
 
 program
@@ -11,7 +12,7 @@ program
   .argument('[path]', 'Directory that contains kustomization.yaml', { default: '.' })
   .action(async ({ args }) => console.log(await generate(args.path.toString())))
   .command('version', 'Prints the kustodize version')
-  .action(() => console.log(program.getVersion()))
+  .action(() => console.log(require(resolve(__filename, '..', 'package.json')).version))
 
 program.disableGlobalOption('-V')
 program.disableGlobalOption('--no-color')
