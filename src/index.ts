@@ -1,3 +1,4 @@
+import { spawn } from 'child_process'
 import { randomBytes } from 'crypto'
 import { promises as fs } from 'fs'
 import { basename, parse, relative, resolve } from 'path'
@@ -25,8 +26,9 @@ async function* listFiles(path: string) {
   }
 }
 
-const writeFile = (path: string, content: string) =>
-  fs.mkdir(resolve(path, '..'), { recursive: true }).then(() => fs.writeFile(path, content))
+const createParentDirectories = (path: string) => fs.mkdir(resolve(path, '..'), { recursive: true })
+
+const writeFile = (path: string, content: string) => fs.writeFile(path, content)
 
 async function walk(path: string): Promise<AsyncIterableIterator<string>> {
   return await isDirectory(path) ? flatMap(walk, listFiles(path)) : just(path)
@@ -39,6 +41,16 @@ async function* parents(path: string, root: string = parse(resolve(path)).root):
     yield* parents(resolve(path, '..'), root)
   }
 }
+
+const execute = (command: string, parameters: string[], stdout: 'ignore' | 'inherit') =>
+  new Promise((resolve, reject) => {
+    const childProcess = spawn(command, parameters, { stdio: ['ignore', stdout, 'inherit'] })
+
+    childProcess.on('exit', code =>
+      code === 0 ? resolve(null) : reject(`Execution of '${command}' failed.`)
+    )
+    childProcess.on('error', reject)
+  })
 
 const randomString = () => randomBytes(18)
   .toString('base64')
@@ -57,10 +69,18 @@ export async function generate(path: string) {
   const buildDirectory = resolve(projectRoot, 'build', 'kustodize', randomString())
 
   for await (const p of flatMap(walk, filter(s => basename(s) !== 'build', listFiles(projectRoot)))) {
-    await writeFile(
-      resolve(buildDirectory, relative(projectRoot, p)),
-      await promisify(renderFile as any)(p, process.env)
-    )
+    const output = resolve(buildDirectory, relative(projectRoot, p))
+    await createParentDirectories(output)
+    const grandparent = resolve(p, '..', '..')
+
+    if (basename(grandparent) === 'secret' && await exists(resolve(grandparent, '..', 'kustomization.yaml'))) {
+      if (process.env['ANSIBLE_VAULT_PASSWORD_FILE'] === undefined) {
+        throw "Environment variable 'ANSIBLE_VAULT_PASSWORD_FILE' is not set."
+      }
+      await execute('ansible-vault', ['decrypt', p, '--output', output], 'ignore')
+    } else {
+      await writeFile(output, await promisify(renderFile as any)(p, process.env))
+    }
   }
   return resolve(buildDirectory, relative(projectRoot, path))
 }
