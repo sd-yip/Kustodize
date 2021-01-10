@@ -1,0 +1,36 @@
+version: 2.1
+
+commands:
+  ci:
+    steps:
+      - checkout
+      - restore_cache:
+          key: npm-h77RWG-{{ checksum "package-lock.json" }}
+      - run: |
+          npm ci --no-optional
+      - save_cache:
+          paths: ~/.npm
+          key: npm-h77RWG-{{ checksum "package-lock.json" }}
+
+jobs:
+  publish:
+    docker:
+      - image: justincasetech/node:12.15.0-npm
+    steps:
+      - run: |
+          apk add --no-cache git openssh-client
+      - ci
+      - run: |
+          test "$(node -p 'require("./package.json").version')" = "$CIRCLE_TAG"
+          echo //registry.npmjs.org/:_authToken="$NPM_TOKEN" >>.npmrc
+          npm publish
+
+
+workflows:
+  version: 2
+
+  unspecific:
+    jobs:
+      - publish:
+          context: npm-publish
+          filters: { branches: { only: /x^/ }, tags: { only: /.*/ } }
