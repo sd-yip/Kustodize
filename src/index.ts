@@ -84,3 +84,7 @@ export async function generate(path: string) {
   }
   return resolve(buildDirectory, relative(projectRoot, path))
 }
+
+export async function build(path: string) {
+  await execute('kustomize', ['build', await generate(path)], 'inherit')
+}
