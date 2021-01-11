@@ -28,8 +28,6 @@ async function* listFiles(path: string) {
 
 const createParentDirectories = (path: string) => fs.mkdir(resolve(path, '..'), { recursive: true })
 
-const writeFile = (path: string, content: string) => fs.writeFile(path, content)
-
 async function walk(path: string): Promise<AsyncIterableIterator<string>> {
   return await isDirectory(path) ? flatMap(walk, listFiles(path)) : just(path)
 }
@@ -80,7 +78,7 @@ export async function generate(path: string) {
       }
       await execute('ansible-vault', ['decrypt', p, '--output', output], 'ignore')
     } else {
-      await writeFile(output, await promisify(renderFile as any)(p, renderOptions))
+      await fs.writeFile(output, await promisify(renderFile as any)(p, renderOptions))
     }
   }
   return resolve(buildDirectory, relative(projectRoot, path))
