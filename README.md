@@ -71,5 +71,5 @@ npm install -g kustodize
 
 ### Prerequisites
 * Node.js
-* `kustomize` (optional, require for the `build` command)
-* `ansible-base` (optional, require for decryption of secrets)
+* `kustomize` (optional, required for the `build` command)
+* `ansible-base` (optional, required for decryption of secrets)
