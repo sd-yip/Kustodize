@@ -65,7 +65,7 @@ export async function generate(path: string) {
     throw "'kustodization.yaml' not found."
   }
   const buildDirectory = resolve(projectRoot, 'build', 'kustodize', randomString())
-  const renderOptions = { ...process.env, settings: { 'twig options': { strict_variables: true } } }
+  const renderOptions = { ...process.env, settings: { 'twig options': { rethrow: true, strict_variables: true } } }
 
   for await (const p of flatMap(walk, filter(s => basename(s) !== 'build', listFiles(projectRoot)))) {
     const output = resolve(buildDirectory, relative(projectRoot, p))
@@ -78,6 +78,8 @@ export async function generate(path: string) {
       }
       await execute('ansible-vault', ['decrypt', p, '--output', output], 'ignore')
     } else {
+      lastUnsafeAction = `rendering ${p}`
+
       await fs.writeFile(output, await promisify(renderFile as any)(p, renderOptions))
     }
   }
@@ -87,3 +89,5 @@ export async function generate(path: string) {
 export async function build(path: string) {
   await execute('kustomize', ['build', await generate(path)], 'inherit')
 }
+
+export let lastUnsafeAction: string | undefined
