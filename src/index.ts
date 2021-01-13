@@ -88,7 +88,9 @@ export async function generate(path: string) {
       if (process.env['ANSIBLE_VAULT_PASSWORD_FILE'] === undefined) {
         throw "Environment variable 'ANSIBLE_VAULT_PASSWORD_FILE' is not set."
       }
-      await execute('ansible-vault', ['decrypt', p, '--output', output], 'ignore')
+      await execute('ansible-vault', ['decrypt', p, '--output', output], 'ignore').catch(() =>
+        fs.unlink(output).catch(() => null) // Delete potential leftover
+      )
     } else {
       lastUnsafeAction = `rendering ${p}`
 
