@@ -10,7 +10,7 @@ process.on('uncaughtException', e => {
 })
 
 program
-  .logger({ error: (message) => console.error(`error: ${message}`) })
+  .logger({ error: message => console.error(`error: ${message}`) })
   .command('build', 'Print configuration per contents of kustomization.yaml')
   .argument('[path]', 'Directory that contains kustomization.yaml', { default: '.' })
   .action(({ args }) => kustodize.build(args.path.toString()))

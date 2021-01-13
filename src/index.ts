@@ -10,13 +10,13 @@ async function* just<T>(element: T) {
   yield element
 }
 
-async function head<T>(elements: AsyncIterableIterator<T>): Promise<T | undefined> {
+async function head<T>(elements: AsyncIterator<T>): Promise<T | undefined> {
   return (await elements.next()).value
 }
 
 const exists = (path: string) => fs.access(path).then(() => true).catch(() => false)
 
-async function isDirectory<T>(path: string) {
+async function isDirectory(path: string) {
   return (await fs.lstat(path)).isDirectory()
 }
 
@@ -28,11 +28,11 @@ async function* listFiles(path: string) {
 
 const createParentDirectories = (path: string) => fs.mkdir(resolve(path, '..'), { recursive: true })
 
-async function walk(path: string): Promise<AsyncIterableIterator<string>> {
+async function walk(path: string): Promise<AsyncGenerator<string>> {
   return await isDirectory(path) ? flatMap(walk, listFiles(path)) : just(path)
 }
 
-async function* parents(path: string, root: string = parse(resolve(path)).root): AsyncIterableIterator<string> {
+async function* parents(path: string, root: string = parse(resolve(path)).root): AsyncGenerator<string> {
   yield path
 
   if (path !== root) {
