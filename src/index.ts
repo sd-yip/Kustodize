@@ -1,10 +1,18 @@
 import { spawn } from 'child_process'
 import { randomBytes } from 'crypto'
 import { promises as fs } from 'fs'
+import ignore from 'ignore'
 import { basename, parse, relative, resolve } from 'path'
 import { filter, flatMap } from 'streaming-iterables'
 import { renderFile } from 'twig'
 import { promisify } from 'util'
+
+function y<T, R>(next: (f: (t: T) => R) => (t: T) => R): (t: T) => R {
+  return t => next(y(next))(t)
+}
+
+async function* empty() {
+}
 
 async function* just<T>(element: T) {
   yield element
@@ -28,9 +36,9 @@ async function* listFiles(path: string) {
 
 const createParentDirectories = (path: string) => fs.mkdir(resolve(path, '..'), { recursive: true })
 
-async function walk(path: string): Promise<AsyncGenerator<string>> {
-  return await isDirectory(path) ? flatMap(walk, listFiles(path)) : just(path)
-}
+const walk = (filter: (p: string) => boolean) => y<string, Promise<AsyncGenerator<string>>>(next => async path =>
+  !filter(path) ? empty() : await isDirectory(path) ? flatMap(next, listFiles(path)) : just(path)
+)
 
 async function* parents(path: string, root: string = parse(resolve(path)).root): AsyncGenerator<string> {
   yield path
@@ -66,8 +74,9 @@ export async function generate(path: string) {
   }
   const buildDirectory = resolve(projectRoot, 'build', 'kustodize', randomString())
   const renderOptions = { ...process.env, settings: { 'twig options': { rethrow: true, strict_variables: true } } }
+  const patterns = ignore().add(['/build', '.git']).createFilter()
 
-  for await (const p of flatMap(walk, filter(s => basename(s) !== 'build', listFiles(projectRoot)))) {
+  for await (const p of flatMap(walk(p => patterns(relative(projectRoot, p))), listFiles(projectRoot))) {
     const output = resolve(buildDirectory, relative(projectRoot, p))
     await createParentDirectories(output)
     const grandparent = resolve(p, '..', '..')
