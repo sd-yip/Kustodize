@@ -77,6 +77,9 @@ export async function generate(path: string) {
   const patterns = ignore().add(['/build', '.git']).createFilter()
 
   for await (const p of flatMap(walk(p => patterns(relative(projectRoot, p))), listFiles(projectRoot))) {
+    if (basename(p) === 'kustodization.yaml' && resolve(p, '..') !== resolve(projectRoot)) {
+      throw `Nested definition as in '${p}' is not supported.`
+    }
     const output = resolve(buildDirectory, relative(projectRoot, p))
     await createParentDirectories(output)
     const grandparent = resolve(p, '..', '..')
