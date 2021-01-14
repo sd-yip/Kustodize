@@ -101,7 +101,7 @@ export async function generate(path: string) {
 }
 
 export async function build(path: string) {
-  await execute('kustomize', ['build', await generate(path)], 'inherit')
+  await execute('kubectl', ['kustomize', await generate(path)], 'inherit')
 }
 
 export let lastUnsafeAction: string | undefined

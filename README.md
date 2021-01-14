@@ -52,13 +52,13 @@ File structure:
 
 In addition to `kustomize`, `kustodization.yaml` marks the project root and hence the `build` directory for outputs. 
 
-To generate YAML (`kustomize` need to be available on your path):
+To generate YAML (`kubectl` need to be available on your path):
 ```sh
 kustodize build ~/someApp/overlays/production
 ```
 
 Or you may [apply](https://kubernetes-sigs.github.io/kustomize/api-reference/glossary#apply)
-it directly to a cluster as well (`kustomize` is not required):
+it directly to a cluster as well:
 ```sh
 kustodize generate ~/someApp/overlays/production | xargs kubectl apply -k
 ```
@@ -71,5 +71,5 @@ npm install -g kustodize
 
 ### Prerequisites
 * Node.js
-* `kustomize` (optional, required for the `build` command)
+* `kubectl` (optional, required for the `build` command)
 * `ansible-base` (optional, required for decryption of secrets)
